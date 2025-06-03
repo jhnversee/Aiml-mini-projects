@@ -1,0 +1,203 @@
+#JAHANVI SENGAR
+#500120543
+# Step 1: Upload your ZIP file
+from google.colab import files
+uploaded = files.upload()  # Upload 'archive (2).zip' when prompted
+
+# Step 2: Unzip the uploaded file
+import zipfile
+import os
+
+zip_path = "/content/archive (2).zip"
+extract_dir = "/content/medical_images"
+
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    zip_ref.extractall(extract_dir)
+
+# Step 3: Check contents of the extracted directory
+for root, dirs, files in os.walk(extract_dir):
+    print("Folder:", root)
+    for file in files[:5]:  # Displaying only first 5 for brevity
+        print("   ", file)
+
+# Step 4: Import necessary libraries
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Step 5: Load and preprocess images
+def load_images(image_dir):
+    images = []
+    labels = []
+    for root, _, files in os.walk(image_dir):  # Recursively walk through subfolders
+        for filename in files:
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                img_path = os.path.join(root, filename)
+                img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+                if img is None:
+                    continue  # Skip unreadable images
+                img = cv2.resize(img, (128, 128))  # Resize for consistency
+                images.append(img.flatten())
+                labels.append(filename)
+    return np.array(images), labels
+
+X, labels = load_images(extract_dir)
+
+# Step 6: Normalize features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Step 7: Reduce dimensionality with PCA
+pca = PCA(n_components=50)
+X_pca = pca.fit_transform(X_scaled)
+
+# Step 8: Apply DBSCAN
+db = DBSCAN(eps=0.5, min_samples=5)
+y_db = db.fit_predict(X_pca)
+
+# Step 9: Visualize clusters
+plt.figure(figsize=(8, 6))
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y_db, cmap='viridis', s=15)
+plt.title("DBSCAN Clustering of Medical Images")
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.colorbar(label="Cluster Label")
+plt.show()
+
+# Step 10: Output number of clusters
+num_clusters = len(set(y_db)) - (1 if -1 in y_db else 0)
+print(f"✅ Number of clusters found (excluding noise): {num_clusters}")
+
+# Step 11: Print cluster assignment
+for i, label in enumerate(y_db):
+    print(f"🖼️ Image {i} (Filename: {labels[i]}) → Cluster {label}")
+
+# Upload ZIP
+from google.colab import files
+uploaded = files.upload()  # Upload 'archive (2).zip'
+
+# Extract ZIP
+import zipfile
+import os
+
+zip_path = "/content/archive (2).zip"
+extract_dir = "/content/medical_images"
+
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    zip_ref.extractall(extract_dir)
+
+# Check extracted folders
+for root, dirs, files in os.walk(extract_dir):
+    print(" Folder:", root)
+    for file in files[:3]:
+        print("   ", file)
+    break  # Only show top-level
+
+# Import libraries
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+# Load & flatten grayscale images
+def load_images(image_dir):
+    images, labels = [], []
+    for root, _, files in os.walk(image_dir):
+        for filename in files:
+            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                path = os.path.join(root, filename)
+                img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+                if img is None: continue
+                img = cv2.resize(img, (128, 128))
+                images.append(img.flatten())
+                labels.append(filename)
+    return np.array(images), labels
+
+# Step 1: Load
+X, labels = load_images(extract_dir)
+print(f"Loaded {len(X)} images.")
+
+# Step 2: Normalize
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Step 3: PCA
+pca = PCA(n_components=50)
+X_pca = pca.fit_transform(X_scaled)
+
+# Step 4: DBSCAN
+db = DBSCAN(eps=0.5, min_samples=5)
+y_db = db.fit_predict(X_pca)
+
+# Step 5: Visualization
+plt.figure(figsize=(8, 6))
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y_db, cmap='viridis', s=15)
+plt.title("DBSCAN Clustering (after PCA)")
+plt.xlabel("PC 1")
+plt.ylabel("PC 2")
+plt.colorbar(label="Cluster")
+plt.grid(True)
+plt.show()
+
+# Step 6: Image-to-cluster mapping
+print("\n Image to Cluster Mapping:")
+for i, label in enumerate(y_db):
+    print(f"{labels[i]} → Cluster {label}")
+
+# Optional: Count clusters
+num_clusters = len(set(y_db)) - (1 if -1 in y_db else 0)
+print(f"\n✅ Total clusters (excluding noise): {num_clusters}")
+
+import matplotlib.pyplot as plt
+
+# Convert flattened images back to 2D
+def reshape_image(flat_img, size=(128, 128)):
+    return flat_img.reshape(size)
+
+# Group image indices by cluster
+from collections import defaultdict
+cluster_groups = defaultdict(list)
+
+for idx, cluster_id in enumerate(y_db):
+    cluster_groups[cluster_id].append(idx)
+
+# Display sample images from each cluster (max 5 per cluster)
+for cluster_id, indices in cluster_groups.items():
+    if cluster_id == -1:
+        title = f"Noise (Cluster -1)"
+    else:
+        title = f"Cluster {cluster_id}"
+
+    print(f"\n Showing {min(5, len(indices))} images from {title} (Total: {len(indices)})")
+
+    plt.figure(figsize=(15, 3))
+    for i, img_idx in enumerate(indices[:5]):
+        img = reshape_image(X[img_idx])
+        plt.subplot(1, 5, i+1)
+        plt.imshow(img, cmap='gray')
+        plt.title(labels[img_idx], fontsize=8)
+        plt.axis('off')
+    plt.suptitle(title)
+    plt.show()
+
+from collections import defaultdict
+
+# Group filenames by cluster
+cluster_dict = defaultdict(list)
+
+for idx, cluster_id in enumerate(y_db):
+    cluster_dict[cluster_id].append(labels[idx])
+
+# Enumerate and display clusters
+print("📋 Enumerated Clusters:\n")
+for i, (cluster_id, image_files) in enumerate(sorted(cluster_dict.items()), start=1):
+    cluster_name = f"Noise Cluster" if cluster_id == -1 else f"Cluster {cluster_id}"
+    print(f"{i}. {cluster_name} ({len(image_files)} images):")
+    for img in image_files:
+        print(f"   - {img}")
+    print("-" * 50)
