@@ -1,0 +1,151 @@
+# Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import Ridge, LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import r2_score
+
+# Preprocessing Function
+def preprocess_data(df):
+    imputer = SimpleImputer(strategy='mean')
+    for col in df.select_dtypes(include=['number']).columns:
+        df[col] = imputer.fit_transform(df[[col]])
+
+    for col in df.select_dtypes(include=['object']).columns:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col].astype(str))
+
+    scaler = StandardScaler()
+    numeric_cols = df.select_dtypes(include=['number']).columns
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+
+    df.drop_duplicates(inplace=True)
+    return df
+
+# 1️⃣ California Housing Dataset
+from sklearn.datasets import fetch_california_housing
+housing = fetch_california_housing()
+housing_df = pd.DataFrame(housing.data, columns=housing.feature_names)
+housing_df['PRICE'] = housing.target
+housing_df = preprocess_data(housing_df)
+
+X1 = housing_df.drop('PRICE', axis=1)
+y1 = housing_df['PRICE']
+X1_train, X1_test, y1_train, y1_test = train_test_split(X1, y1, test_size=0.2, random_state=42)
+
+ridge = Ridge()
+params1 = {'alpha': [0.01, 0.1, 1, 10]}
+grid1 = GridSearchCV(ridge, params1, cv=5, scoring='r2')
+grid1.fit(X1_train, y1_train)
+y1_pred = grid1.predict(X1_test)
+
+print("✅ California Housing Dataset")
+print("Best alpha:", grid1.best_params_['alpha'])
+print("R² Score:", r2_score(y1_test, y1_pred))
+
+plt.figure(figsize=(6, 4))
+plt.scatter(y1_test, y1_pred, alpha=0.5, color='green')
+plt.plot([y1_test.min(), y1_test.max()], [y1_test.min(), y1_test.max()], 'r--')
+plt.title("Housing Prices - Actual vs Predicted")
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.grid(True)
+plt.show()
+
+# 2️⃣ Employee Dataset
+employee_data = {
+    'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eva'],
+    'Age': [25, 30, 35, np.nan, 40],
+    'Department': ['HR', 'IT', 'IT', 'Finance', 'HR'],
+    'Salary': [50000, 60000, np.nan, 70000, 55000]
+}
+employee_df = pd.DataFrame(employee_data)
+employee_df = preprocess_data(employee_df)
+
+X2 = employee_df.drop('Salary', axis=1)
+y2 = employee_df['Salary']
+X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y2, test_size=0.4, random_state=42)
+
+dtree = DecisionTreeRegressor(random_state=42)
+params2 = {'max_depth': [2, 3, 4], 'min_samples_split': [2, 3, 5]}
+grid2 = GridSearchCV(dtree, params2, cv=3, scoring='r2')
+grid2.fit(X2_train, y2_train)
+y2_pred = grid2.predict(X2_test)
+
+print("\n✅ Employee Dataset")
+print("Best Parameters:", grid2.best_params_)
+print("R² Score:", r2_score(y2_test, y2_pred))
+
+plt.figure(figsize=(6, 4))
+plt.scatter(y2_test, y2_pred, color='purple')
+plt.plot([y2_test.min(), y2_test.max()], [y2_test.min(), y2_test.max()], 'r--')
+plt.title("Employee Salary - Actual vs Predicted")
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.grid(True)
+plt.show()
+
+# 3️⃣ Rajya Sabha Dataset (data.gov.in)
+try:
+    rs_df = pd.read_csv("/mnt/data/b9f251ca-249c-4d33-9128-833122e90ea9.csv")
+    print("\n📄 Rajya Sabha Dataset Columns:")
+    print(rs_df.columns)
+
+    rs_df = preprocess_data(rs_df)
+    X3 = rs_df.iloc[:, :-1]
+    y3 = rs_df.iloc[:, -1]
+
+    X3_train, X3_test, y3_train, y3_test = train_test_split(X3, y3, test_size=0.3, random_state=42)
+    model3 = LinearRegression()
+    model3.fit(X3_train, y3_train)
+    y3_pred = model3.predict(X3_test)
+
+    print("\n✅ Rajya Sabha Dataset")
+    print("R² Score:", r2_score(y3_test, y3_pred))
+
+    plt.figure(figsize=(6, 4))
+    plt.scatter(y3_test, y3_pred, color='orange')
+    plt.plot([y3_test.min(), y3_test.max()], [y3_test.min(), y3_test.max()], 'r--')
+    plt.title("Rajya Sabha - Actual vs Predicted")
+    plt.xlabel("Actual")
+    plt.ylabel("Predicted")
+    plt.grid(True)
+    plt.show()
+except Exception as e:
+    print("⚠️ Rajya Sabha Dataset Error:", e)
+
+# 4️⃣ Basava Housing Scheme Dataset (Upload Required)
+try:
+    basava_path = "/mnt/data/Basava_Housing_Scheme_24-11-2021.csv"
+    basava_df = pd.read_csv(basava_path)
+    print("\n📄 Basava Housing Scheme Columns:")
+    print(basava_df.columns)
+
+    basava_df = preprocess_data(basava_df)
+    X4 = basava_df.iloc[:, :-1]
+    y4 = basava_df.iloc[:, -1]
+
+    X4_train, X4_test, y4_train, y4_test = train_test_split(X4, y4, test_size=0.2, random_state=42)
+    model4 = LinearRegression()
+    model4.fit(X4_train, y4_train)
+    y4_pred = model4.predict(X4_test)
+
+    print("\n✅ Basava Housing Scheme Dataset")
+    print("R² Score:", r2_score(y4_test, y4_pred))
+
+    plt.figure(figsize=(6, 4))
+    plt.scatter(y4_test, y4_pred, color='blue')
+    plt.plot([y4_test.min(), y4_test.max()], [y4_test.min(), y4_test.max()], 'r--')
+    plt.title("Basava Housing Scheme - Actual vs Predicted")
+    plt.xlabel("Actual")
+    plt.ylabel("Predicted")
+    plt.grid(True)
+    plt.show()
+except Exception as e:
+    print("⚠️ Basava Dataset Error:", e)
+  
